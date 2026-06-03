@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>재회 가능성 진단</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:      #0b1325;
+  --navy-mid:  #111e35;
+  --navy-card: #0f1a2e;
+  --navy-border: #1e2e4a;
+  --navy-hover: #162440;
+  --gold:      #c9a84c;
+  --gold-light: #e8c96a;
+  --gold-dim:  #8a6d2f;
+  --gold-pale: #f5e9c8;
+  --white:     #f0ecdf;
+  --muted:     #8a96ab;
+  --serif: 'Noto Serif KR', Georgia, serif;
+  --sans: 'Noto Sans KR', sans-serif;
+}
+
+html, body { min-height: 100vh; }
+
+body {
+  background: var(--navy);
+  color: var(--white);
+  font-family: var(--sans);
+  font-weight: 300;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0 20px 60px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── INTRO ── */
+.intro-header {
+  text-align: center;
+  padding: 64px 0 40px;
+}
+
+.big-num {
+  font-family: var(--serif);
+  font-size: 80px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  opacity: 0.18;
+  margin-bottom: -16px;
+}
+
+.big-label {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 28px;
+  display: block;
+}
+
+.intro-title {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.35;
+  margin-bottom: 16px;
+}
+
+.intro-sub {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.9;
+  margin-bottom: 28px;
+}
+
+.intro-meta {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.meta-pill {
+  font-size: 11px;
+  color: var(--gold);
+  border: 0.5px solid var(--gold-dim);
+  border-radius: 99px;
+  padding: 5px 14px;
+  letter-spacing: 0.06em;
+}
+
+.start-btn {
+  display: block;
+  width: 100%;
+  padding: 16px;
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 4px;
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 32px;
+  letter-spacing: 0.04em;
+  transition: background 0.2s, transform 0.1s;
+}
+.start-btn:hover { background: var(--gold-light); }
+.start-btn:active { transform: scale(0.99); }
+
+.intro-hint {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 12px;
+  letter-spacing: 0.03em;
+}
+
+/* ── QUIZ ── */
+.progress-bar {
+  height: 2px;
+  background: var(--navy-border);
+  margin-bottom: 32px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.4s ease;
+}
+
+.step-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.step-dots { display: flex; gap: 8px; }
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--navy-border);
+  transition: background 0.2s;
+}
+.dot.active { background: var(--gold); }
+.step-label {
+  font-size: 11px;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.section-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+.section-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.check-count {
+  font-size: 11px;
+  color: var(--gold-dim);
+  margin-bottom: 14px;
+  letter-spacing: 0.04em;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 4px;
+  border: 0.5px solid var(--navy-border);
+  background: var(--navy-card);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.item:hover { border-color: var(--gold-dim); background: var(--navy-hover); }
+.item.checked { border-color: var(--gold); background: var(--navy-hover); }
+
+.checkbox {
+  width: 18px; height: 18px;
+  border-radius: 3px;
+  border: 1px solid var(--navy-border);
+  flex-shrink: 0;
+  margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, border-color 0.15s;
+}
+.item.checked .checkbox { background: var(--gold); border-color: var(--gold); }
+.check-mark { display: none; color: var(--navy); font-size: 11px; font-weight: 700; }
+.item.checked .check-mark { display: block; }
+.item-text { font-size: 13px; color: var(--white); line-height: 1.6; }
+
+.total-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--navy-card);
+  border: 0.5px solid var(--navy-border);
+  border-radius: 4px;
+  margin-bottom: 24px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.total-count {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.nav { display: flex; gap: 10px; }
+.btn-back {
+  flex: 0 0 auto;
+  padding: 13px 18px;
+  border-radius: 4px;
+  border: 0.5px solid var(--navy-border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.btn-back:hover { border-color: var(--gold-dim); }
+.btn-next {
+  flex: 1;
+  padding: 13px;
+  border-radius: 4px;
+  border: none;
+  background: var(--gold);
+  color: var(--navy);
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-next:hover { background: var(--gold-light); }
+
+/* ── RESULT ── */
+.result-header {
+  text-align: center;
+  padding: 40px 0 32px;
+  border-bottom: 0.5px solid var(--navy-border);
+  margin-bottom: 28px;
+}
+.result-level {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+.result-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.result-desc {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.85;
+}
+
+.result-section-label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 14px;
+}
+
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.result-card {
+  padding: 16px;
+  border-radius: 4px;
+  border: 0.5px solid var(--navy-border);
+  background: var(--navy-card);
+  text-align: left;
+}
+.result-card.danger { border-color: #7a1f1f; }
+.result-card.warning { border-color: var(--gold-dim); }
+.result-card.ok { border-color: #1e4d38; }
+
+.result-card-label {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+.result-card.danger .result-card-label { color: #e07070; }
+.result-card.warning .result-card-label { color: var(--gold); }
+.result-card.ok .result-card-label { color: #4caf82; }
+
+.result-card-name {
+  font-size: 14px;
+  color: var(--white);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.result-card-score { font-size: 11px; color: var(--muted); }
+
+.result-bar { height: 3px; background: var(--navy-border); border-radius: 2px; margin-top: 10px; }
+.result-bar-fill { height: 100%; border-radius: 2px; }
+.danger .result-bar-fill { background: #c0392b; }
+.warning .result-bar-fill { background: var(--gold); }
+.ok .result-bar-fill { background: #2e7d5e; }
+
+/* ── CTA BOX ── */
+.cta-box {
+  padding: 24px 22px;
+  border-radius: 4px;
+  border: 0.5px solid var(--gold-dim);
+  background: var(--navy-card);
+  margin-bottom: 16px;
+}
+
+.cta-priority-badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--navy);
+  background: var(--gold);
+  border-radius: 2px;
+  padding: 3px 10px;
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+.cta-priority-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid var(--navy-border);
+}
+
+.cta-priority-label {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.priority-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.priority-tag {
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  border: 0.5px solid var(--navy-border);
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.priority-tag.top {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(201,168,76,0.08);
+  font-weight: 500;
+}
+
+.cta-box-title {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--white);
+  margin-bottom: 8px;
+  line-height: 1.45;
+}
+.cta-box-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.85;
+  margin-bottom: 18px;
+}
+.cta-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  padding: 14px;
+  background: var(--gold);
+  color: var(--navy);
+  border: none;
+  border-radius: 4px;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+.cta-btn:hover { background: var(--gold-light); }
+
+.reset-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  border-radius: 4px;
+  border: 0.5px solid var(--navy-border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  letter-spacing: 0.03em;
+}
+.reset-btn:hover { border-color: var(--gold-dim); color: var(--white); }
+
+.hidden { display: none; }
+#quiz { padding-top: 48px; }
+#result { padding-top: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- INTRO -->
+  <div id="intro">
+    <div class="intro-header">
+      <span class="big-num">25</span>
+      <span class="big-label">Questions · Self Diagnosis</span>
+      <h1 class="intro-title">재회 가능성<br>자가진단</h1>
+      <p class="intro-sub">
+        헤어진 뒤 어떤 행동을 하셨는지가<br>
+        재회 가능성을 결정합니다.<br>
+        솔직하게 체크할수록 정확한 결과가 나옵니다.
+      </p>
+      <div class="intro-meta">
+        <span class="meta-pill">4개 영역</span>
+        <span class="meta-pill">25개 항목</span>
+        <span class="meta-pill">약 2분</span>
+      </div>
+    </div>
+    <button class="start-btn" onclick="startQuiz()">진단 시작하기</button>
+    <p class="intro-hint">해당되는 항목을 모두 체크해 주세요</p>
+  </div>
+
+  <!-- QUIZ -->
+  <div id="quiz" class="hidden">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="step-row">
+      <div class="step-dots" id="step-dots"></div>
+      <div class="step-label" id="step-label"></div>
+    </div>
+    <div class="section-title" id="section-title"></div>
+    <div class="section-sub" id="section-sub"></div>
+    <div class="check-count">해당되는 항목 체크 &nbsp;<span id="checked-now">0</span> / <span id="total-now">0</span></div>
+    <div class="items" id="items"></div>
+    <div class="total-bar">
+      <span>전체 체크</span>
+      <span><span class="total-count" id="total-checked">0</span> / 25</span>
+    </div>
+    <div class="nav">
+      <button class="btn-back" id="btn-back" onclick="prevStep()">←</button>
+      <button class="btn-next" id="btn-next" onclick="nextStep()">다음</button>
+    </div>
+  </div>
+
+  <!-- RESULT -->
+  <div id="result" class="hidden">
+    <div class="result-header">
+      <div class="result-level" id="res-level"></div>
+      <div class="result-title" id="res-title"></div>
+      <div class="result-desc" id="res-desc"></div>
+    </div>
+    <div class="result-section-label">영역별 위험도 분석</div>
+    <div class="result-grid" id="result-grid"></div>
+    <div class="cta-box">
+      <div class="cta-priority-badge">가장 먼저 극복해야 할 부분</div>
+      <div class="cta-priority-row">
+        <span class="cta-priority-label">진단 영역</span>
+        <div class="priority-tags" id="priority-tags"></div>
+      </div>
+      <div class="cta-box-title" id="cta-main-title"></div>
+      <div class="cta-box-desc" id="cta-main-desc"></div>
+      <button class="cta-btn" onclick="location.href='https://prism.crekit.io/new-page'">재회 전략 가이드 받기 →</button>
+    </div>
+    <button class="reset-btn" onclick="resetQuiz()">처음부터 다시 하기</button>
+  </div>
+
+</div>
+
+<script>
+const sections = [
+  {
+    title: "가치의 하락",
+    sub: "헤어진 뒤 얼마나 '쉬운 사람'으로 보이게 됐는지 확인합니다",
+    key: "value",
+    items: [
+      "헤어진 직후 먼저 연락해서 매달린 적 있다",
+      "카톡을 보내고 읽씹 당한 뒤 또 보낸 적 있다",
+      "'한 번만 만나달라'는 식의 애원성 메시지를 보낸 적 있다",
+      "SNS에서 그 사람의 스토리나 게시물을 매일 확인한다",
+      "공통 지인을 통해 상대의 근황을 수소문한 적 있다",
+      "상대가 새로운 이성을 만날까봐 불안해서 행동한 적 있다"
+    ]
+  },
+  {
+    title: "신뢰도 하락",
+    sub: "상대 눈에 얼마나 '예측 불가한 사람'이 됐는지 확인합니다",
+    key: "trust",
+    items: [
+      "감정적인 상태에서 문자나 카톡을 보낸 적 있다",
+      "술 먹고 연락한 적 있다",
+      "상대의 반응에 따라 태도가 180도 달라진 적 있다",
+      "화해를 시도하다 거절당하면 차갑게 돌변한 적 있다",
+      "헤어진 이유에 대해 상대를 탓하는 메시지를 보낸 적 있다",
+      "약속을 잡고 취소하거나, 연락하겠다고 해놓고 안 한 적 있다",
+      "재회를 빌미로 변했다고 했지만 실제로 달라진 게 없다"
+    ]
+  },
+  {
+    title: "이미지 붕괴",
+    sub: "상대의 기억 속에서 얼마나 이미지가 망가졌는지 확인합니다",
+    key: "image",
+    items: [
+      "SNS에 이별을 암시하는 감성 게시물을 올린 적 있다",
+      "상대 주변 사람에게 '힘들다'는 말을 흘린 적 있다",
+      "공통 지인 자리에서 그 사람 이야기를 먼저 꺼낸 적 있다",
+      "연락을 끊겠다고 선언하고 며칠 안에 다시 연락한 적 있다",
+      "관계가 끝난 뒤에도 서운함이나 억울함을 표현한 적 있다",
+      "상대를 직접 찾아간 적 있다"
+    ]
+  },
+  {
+    title: "재회 준비도",
+    sub: "지금 실제로 달라진 부분이 있는지 확인합니다",
+    key: "readiness",
+    items: [
+      "헤어진 뒤 운동, 외모, 스타일에 실질적인 변화가 없다",
+      "하루에 한 번 이상 그 사람 생각이 먼저 떠오른다",
+      "새로운 목표나 루틴을 만들지 않고 예전 생활을 이어가고 있다",
+      "이별의 원인이 무엇인지 스스로 정의한 적 없다",
+      "다시 만나면 어떻게 할지 구체적인 계획이 없다",
+      "지금 당장 연락이 와도 어떻게 반응할지 모르겠다"
+    ]
+  }
+];
+
+const priorityInfo = {
+  value: {
+    tag: '가치',
+    title: '먼저 가치를 복구해야 합니다',
+    desc: '상대에게 당신은 이미 \'쉬운 사람\'으로 인식되어 있습니다.\n떨어진 가치를 극복하는 구체적인 방법을 확인해 보세요.'
+  },
+  trust: {
+    tag: '신뢰도',
+    title: '먼저 신뢰도를 복구해야 합니다',
+    desc: '감정적인 행동의 반복이 상대의 신뢰를 크게 떨어뜨렸습니다.\n떨어진 신뢰도를 극복하는 구체적인 방법을 확인해 보세요.'
+  },
+  image: {
+    tag: '이미지',
+    title: '먼저 이미지를 복구해야 합니다',
+    desc: '상대의 기억 속 당신의 이미지가 이미 무너진 상태입니다.\n무너진 이미지를 극복하는 구체적인 방법을 확인해 보세요.'
+  },
+  readiness: {
+    tag: '마인드셋',
+    title: '먼저 마인드셋을 재정립해야 합니다',
+    desc: '재회 전략보다 내면의 변화가 먼저 필요한 상태입니다.\n마인드셋을 바꾸는 구체적인 방법을 확인해 보세요.'
+  }
+};
+
+const allTags = ['가치', '신뢰도', '이미지', '마인드셋'];
+const keyToTag = { value:'가치', trust:'신뢰도', image:'이미지', readiness:'마인드셋' };
+const tagToKey = { '가치':'value', '신뢰도':'trust', '이미지':'image', '마인드셋':'readiness' };
+
+let current = 0;
+let checks = { value:[], trust:[], image:[], readiness:[] };
+
+function startQuiz() {
+  document.getElementById('intro').classList.add('hidden');
+  document.getElementById('quiz').classList.remove('hidden');
+  renderStep();
+}
+
+function renderStep() {
+  const s = sections[current];
+  const total = sections.length;
+  document.getElementById('progress').style.width = ((current+1)/total*100)+'%';
+  document.getElementById('section-title').textContent = s.title;
+  document.getElementById('section-sub').textContent = s.sub;
+  document.getElementById('step-label').textContent = 'STEP '+(current+1)+' / '+total;
+  document.getElementById('total-now').textContent = s.items.length;
+
+  const dots = document.getElementById('step-dots');
+  dots.innerHTML = '';
+  for(let i=0;i<total;i++){
+    const d = document.createElement('div');
+    d.className = 'dot'+(i<=current?' active':'');
+    dots.appendChild(d);
+  }
+
+  const container = document.getElementById('items');
+  container.innerHTML = '';
+  s.items.forEach((text,i) => {
+    const checked = checks[s.key].includes(i);
+    const div = document.createElement('div');
+    div.className = 'item'+(checked?' checked':'');
+    div.innerHTML = '<div class="checkbox"><span class="check-mark">✓</span></div><div class="item-text">'+text+'</div>';
+    div.onclick = () => toggleItem(i, div, s.key);
+    container.appendChild(div);
+  });
+
+  updateCounts();
+  document.getElementById('btn-back').style.visibility = current===0?'hidden':'visible';
+  document.getElementById('btn-next').textContent = current===total-1?'결과 보기':'다음';
+}
+
+function toggleItem(i, el, key) {
+  const arr = checks[key];
+  const idx = arr.indexOf(i);
+  if(idx===-1){ arr.push(i); el.classList.add('checked'); }
+  else { arr.splice(idx,1); el.classList.remove('checked'); }
+  updateCounts();
+}
+
+function updateCounts() {
+  const s = sections[current];
+  document.getElementById('checked-now').textContent = checks[s.key].length;
+  const total = Object.values(checks).reduce((a,b)=>a+b.length,0);
+  document.getElementById('total-checked').textContent = total;
+}
+
+function nextStep() {
+  if(current < sections.length-1){ current++; renderStep(); }
+  else showResult();
+}
+function prevStep() { if(current>0){ current--; renderStep(); } }
+
+function showResult() {
+  document.getElementById('quiz').classList.add('hidden');
+  document.getElementById('result').classList.remove('hidden');
+
+  const scores = { value:checks.value.length, trust:checks.trust.length, image:checks.image.length, readiness:checks.readiness.length };
+  const maxes  = { value:6, trust:7, image:6, readiness:6 };
+  const total  = Object.values(scores).reduce((a,b)=>a+b,0);
+
+  let level, title, desc;
+  if(total<=5){
+    level='LEVEL 1 — 양호';
+    title='재회 가능성, 아직 살아있습니다';
+    desc='치명적인 실수는 없었습니다. 지금부터 올바른 방향으로 움직이시면 가능성은 충분합니다.';
+  } else if(total<=12){
+    level='LEVEL 2 — 주의';
+    title='일부 영역에서 가치가 무너진 상태입니다';
+    desc='몇 가지 실수가 이미지에 영향을 주었습니다. 지금 행동을 멈추고 방향을 재설정하셔야 합니다.';
+  } else if(total<=19){
+    level='LEVEL 3 — 위험';
+    title='상대 눈에 당신의 가치가 크게 하락했습니다';
+    desc='지금 당장 연락을 시도하는 것은 역효과입니다. 먼저 가치를 복구하는 작업이 필요합니다.';
+  } else {
+    level='LEVEL 4 — 심각';
+    title='재회보다 자기 복구가 먼저입니다';
+    desc='지금 상태로는 어떤 재회 전략도 통하지 않습니다. 나를 다시 세팅하는 것이 유일한 길입니다.';
+  }
+
+  document.getElementById('res-level').textContent = level;
+  document.getElementById('res-title').textContent = title;
+  document.getElementById('res-desc').textContent = desc;
+
+  const labels = { value:'가치의 하락', trust:'신뢰도 하락', image:'이미지 붕괴', readiness:'재회 준비도' };
+  const grid = document.getElementById('result-grid');
+  grid.innerHTML = '';
+
+  // 위험도 퍼센트 계산해서 최고 영역 찾기
+  const pcts = {};
+  Object.entries(scores).forEach(([key, score]) => {
+    const max = maxes[key];
+    const pct = Math.round(score/max*100);
+    pcts[key] = pct;
+    const cls = pct>=70?'danger':pct>=40?'warning':'ok';
+    const statusText = pct>=70?'높음':pct>=40?'보통':'양호';
+    const card = document.createElement('div');
+    card.className = 'result-card '+cls;
+    card.innerHTML =
+      '<div class="result-card-label">'+labels[key]+'</div>'+
+      '<div class="result-card-name">'+score+' / '+max+' 항목</div>'+
+      '<div class="result-card-score">위험도: '+statusText+'</div>'+
+      '<div class="result-bar"><div class="result-bar-fill" style="width:'+pct+'%"></div></div>';
+    grid.appendChild(card);
+  });
+
+  // 가장 위험한 영역 찾기
+  const topKey = Object.entries(pcts).sort((a,b)=>b[1]-a[1])[0][0];
+  const info = priorityInfo[topKey];
+
+  // 태그 렌더링
+  const tagsEl = document.getElementById('priority-tags');
+  tagsEl.innerHTML = '';
+  allTags.forEach(tag => {
+    const span = document.createElement('span');
+    span.className = 'priority-tag' + (keyToTag[topKey]===tag ? ' top' : '');
+    span.textContent = tag;
+    tagsEl.appendChild(span);
+  });
+
+  // CTA 텍스트
+  document.getElementById('cta-main-title').textContent = info.title;
+  document.getElementById('cta-main-desc').textContent = info.desc;
+}
+
+function resetQuiz() {
+  current=0;
+  checks={value:[],trust:[],image:[],readiness:[]};
+  document.getElementById('result').classList.add('hidden');
+  document.getElementById('intro').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
